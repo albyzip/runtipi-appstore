@@ -1,50 +1,88 @@
 {
   "name": "OpenProject",
-  "available": true,
-  "port": 8080,
-  "exposable": true,
-  "dynamic_config": true,
   "id": "openproject",
+  "available": true,
+  "short_desc": "Профессиональная система управления проектами с открытым исходным кодом",
+  "author": "OpenProject GmbH",
+  "port": 8080,
+  "categories": ["development", "utilities", "collaboration"],
+  "description": "OpenProject - это веб-система для управления проектами с поддержкой методологий Agile, Scrum и Kanban. Включает диаграммы Ганта, управление задачами, отслеживание времени и затрат, вики и многое другое.",
   "tipi_version": 1,
-  "version": "15.0.0",
-  "categories": ["development", "utilities"],
-  "description": "OpenProject - это программное обеспечение для управления проектами с открытым исходным кодом. Оно включает в себя множество функций для планирования проектов, отслеживания задач и совместной работы.",
-  "short_desc": "Управление проектами и совместная работа с открытым исходным кодом",
-  "author": "OpenProject Foundation",
+  "version": "15-slim",
   "source": "https://github.com/opf/openproject",
-  "website": "https://www.openproject.org/",
+  "exposable": true,
+  "supported_architectures": ["arm64", "amd64"],
   "form_fields": [
     {
-      "type": "random",
-      "label": "Пароль базы данных",
-      "min": 32,
-      "required": true,
-      "env_variable": "OP_POSTGRES_PASSWORD"
-    },
-    {
-      "type": "random",
-      "label": "Секретный ключ",
-      "min": 64,
-      "required": true,
-      "env_variable": "OP_SECRET_KEY_BASE"
+      "type": "text",
+      "label": "Версия OpenProject",
+      "default": "15-slim",
+      "required": false,
+      "options": [
+        { "label": "15-slim (стабильная)", "value": "15-slim" },
+        { "label": "Latest (последняя версия)", "value": "latest" },
+        { "label": "Edge (разрабатываемая)", "value": "edge" }
+      ],
+      "env_variable": "TAG"
     },
     {
       "type": "text",
-      "label": "Имя домена",
-      "hint": "Домен, на котором будет работать OpenProject (оставьте пустым для использования IP)",
+      "label": "Имя хоста",
+      "placeholder": "localhost",
+      "default": "localhost",
       "required": false,
-      "env_variable": "OP_HOST_NAME"
+      "env_variable": "OPENPROJECT_HOST__NAME"
     },
     {
       "type": "boolean",
-      "label": "HTTPS",
-      "hint": "Включить HTTPS доступ к OpenProject",
+      "label": "Включить HTTPS",
       "default": false,
       "required": false,
       "env_variable": "OPENPROJECT_HTTPS"
+    },
+    {
+      "type": "text",
+      "label": "Относительный URL-путь",
+      "placeholder": "",
+      "hint": "Например, /openproject - оставьте пустым для корневого пути",
+      "required": false,
+      "env_variable": "OPENPROJECT_RAILS__RELATIVE__URL__ROOT"
+    },
+    {
+      "type": "password",
+      "label": "Пароль PostgreSQL",
+      "min": 8,
+      "default": "p4ssw0rd",
+      "required": false,
+      "env_variable": "POSTGRES_PASSWORD"
+    },
+    {
+      "type": "number",
+      "label": "Минимальное число потоков Rails",
+      "default": 4,
+      "min": 1,
+      "max": 32,
+      "required": false,
+      "env_variable": "RAILS_MIN_THREADS"
+    },
+    {
+      "type": "number",
+      "label": "Максимальное число потоков Rails",
+      "default": 16,
+      "min": 1,
+      "max": 64,
+      "required": false,
+      "env_variable": "RAILS_MAX_THREADS"
+    },
+    {
+      "type": "boolean",
+      "label": "Включить IMAP",
+      "default": false,
+      "hint": "Включите для получения электронной почты",
+      "required": false,
+      "env_variable": "IMAP_ENABLED"
     }
   ],
-  "supported_architectures": ["arm64", "amd64"],
-  "created_at": 1746123456789,
-  "updated_at": 1746123456789
+  "created_at": 1724134338800,
+  "updated_at": 1724134338800
 }

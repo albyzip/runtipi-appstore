@@ -1,79 +1,145 @@
+version: "3.9"
+networks:
+  tipi_main_network:
+    external: true
+  op-backend:
+    driver: bridge
+
+volumes:
+  op-pgdata:
+  op-opdata:
+
+x-op-restart-policy: &restart_policy
+  restart: unless-stopped
+
+x-op-image: &image
+  image: openproject/openproject:${TAG:-15-slim}
+
+x-op-app: &app
+  <<: [*image, *restart_policy]
+  environment:
+    - TZ=${TZ}
+    - OPENPROJECT_HTTPS=${OPENPROJECT_HTTPS:-false}
+    - OPENPROJECT_HOST__NAME=${OPENPROJECT_HOST__NAME:-localhost:8080}
+    - OPENPROJECT_HSTS=${OPENPROJECT_HSTS:-true}
+    - RAILS_CACHE_STORE=memcache
+    - OPENPROJECT_CACHE__MEMCACHE__SERVER=op-cache:11211
+    - OPENPROJECT_RAILS__RELATIVE__URL__ROOT=${OPENPROJECT_RAILS__RELATIVE__URL__ROOT:-}
+    - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-p4ssw0rd}@op-db/openproject?pool=20&encoding=unicode&reconnect=true
+    - RAILS_MIN_THREADS=${RAILS_MIN_THREADS:-4}
+    - RAILS_MAX_THREADS=${RAILS_MAX_THREADS:-16}
+    - IMAP_ENABLED=${IMAP_ENABLED:-false}
+  volumes:
+    - ${APP_DATA_DIR}/data/opdata:/var/openproject/assets
+
 services:
   openproject:
-    image: openproject/community:15
     container_name: openproject
-    restart: unless-stopped
+    <<: *app
+    command: "./docker/prod/web"
     ports:
-      - ${APP_PORT}:8080
-    environment:
-      DATABASE_URL: postgres://postgres:${OP_POSTGRES_PASSWORD}@openproject-postgres:5432/openproject
-      SECRET_KEY_BASE: ${OP_SECRET_KEY_BASE}
-      OPENPROJECT_HOST__NAME: ${OP_HOST_NAME}
-      OPENPROJECT_HTTPS: ${OPENPROJECT_HTTPS}
-      RAILS_MIN_THREADS: "4"
-      RAILS_MAX_THREADS: "16"
-      PGPASSWORD: ${OP_POSTGRES_PASSWORD}
-    volumes:
-      - ${APP_DATA_DIR}/data/assets:/var/openproject/assets
-      - ${APP_DATA_DIR}/data/pgdata:/var/openproject/pgdata
-    depends_on:
-      openproject-postgres:
-        condition: service_healthy
-      openproject-cache:
-        condition: service_started
+      - "${APP_PORT:-8080}:8080"
     networks:
       - tipi_main_network
+      - op-backend
+    depends_on:
+      op-db:
+        condition: service_started
+      op-cache:
+        condition: service_started
+      op-seeder:
+        condition: service_started
     labels:
+      # Main
       traefik.enable: true
       traefik.http.middlewares.openproject-web-redirect.redirectscheme.scheme: https
-      traefik.http.services.openproject.loadbalancer.server.port: "8080"
+      traefik.http.services.openproject.loadbalancer.server.port: 8080
+      # Web
       traefik.http.routers.openproject-insecure.rule: Host(`${APP_DOMAIN}`)
       traefik.http.routers.openproject-insecure.entrypoints: web
       traefik.http.routers.openproject-insecure.service: openproject
       traefik.http.routers.openproject-insecure.middlewares: openproject-web-redirect
+      # Websecure
       traefik.http.routers.openproject.rule: Host(`${APP_DOMAIN}`)
       traefik.http.routers.openproject.entrypoints: websecure
       traefik.http.routers.openproject.service: openproject
       traefik.http.routers.openproject.tls.certresolver: myresolver
+      # Local domain
       traefik.http.routers.openproject-local-insecure.rule: Host(`openproject.${LOCAL_DOMAIN}`)
       traefik.http.routers.openproject-local-insecure.entrypoints: web
       traefik.http.routers.openproject-local-insecure.service: openproject
       traefik.http.routers.openproject-local-insecure.middlewares: openproject-web-redirect
+      # Local domain secure
       traefik.http.routers.openproject-local.rule: Host(`openproject.${LOCAL_DOMAIN}`)
       traefik.http.routers.openproject-local.entrypoints: websecure
       traefik.http.routers.openproject-local.service: openproject
       traefik.http.routers.openproject-local.tls: true
-
-  openproject-postgres:
-    image: postgres:14
-    container_name: openproject-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: ${OP_POSTGRES_PASSWORD}
-      POSTGRES_USER: postgres
-      POSTGRES_DB: openproject
-      PGDATA: /var/lib/postgresql/data
-    volumes:
-      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data
+      # Health check
+      autoheal: true
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080${OPENPROJECT_RAILS__RELATIVE__URL__ROOT:-}/health_checks/default"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - tipi_main_network
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
-  openproject-cache:
-    image: redis:7.0
-    container_name: openproject-cache
+  op-db:
+    image: postgres:13
     restart: unless-stopped
+    stop_grace_period: "3s"
     volumes:
-      - ${APP_DATA_DIR}/data/redis:/data
-    command: redis-server --save 900 1 --save 300 10 --save 60 10000
+      - ${APP_DATA_DIR}/data/pgdata:/var/lib/postgresql/data
+    environment:
+      - TZ=${TZ}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-p4ssw0rd}
+      - POSTGRES_DB=openproject
     networks:
-      - tipi_main_network
+      - op-backend
 
-networks:
-  tipi_main_network:
-    name: runtipi_tipi_main_network
-    external: true
+  op-cache:
+    image: memcached
+    restart: unless-stopped
+    networks:
+      - op-backend
+
+  op-autoheal:
+    image: willfarrell/autoheal:1.2.0
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - TZ=${TZ}
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_START_PERIOD=600
+      - AUTOHEAL_INTERVAL=30
+    restart: unless-stopped
+
+  op-worker:
+    <<: *app
+    command: "./docker/prod/worker"
+    networks:
+      - op-backend
+    depends_on:
+      op-db:
+        condition: service_started
+      op-cache:
+        condition: service_started
+
+  op-cron:
+    <<: *app
+    command: "./docker/prod/cron"
+    networks:
+      - op-backend
+    depends_on:
+      op-db:
+        condition: service_started
+      op-cache:
+        condition: service_started
+
+  op-seeder:
+    <<: *app
+    command: "./docker/prod/seeder"
+    restart: on-failure
+    networks:
+      - op-backend
+    depends_on:
+      - op-db
