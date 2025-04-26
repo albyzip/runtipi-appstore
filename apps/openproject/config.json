@@ -2,16 +2,18 @@
   "name": "OpenProject",
   "id": "openproject",
   "available": true,
-  "short_desc": "Профессиональная система управления проектами с открытым исходным кодом",
+  "short_desc": "Open source project management and collaboration software",
   "author": "OpenProject GmbH",
-  "port": 8080,
-  "categories": ["development", "utilities", "collaboration"],
-  "description": "OpenProject - это веб-система для управления проектами с поддержкой методологий Agile, Scrum и Kanban. Включает диаграммы Ганта, управление задачами, отслеживание времени и затрат, вики и многое другое.",
+  "port": 8081,
+  "categories": ["development", "utilities"],
+  "description": "OpenProject is an open-source project management software designed for teams to collaborate, organize, plan and implement projects together.",
   "tipi_version": 1,
-  "version": "15-slim",
-  "source": "https://github.com/opf/openproject",
+  "version": "v15-slim",
+  "source": "https://github.com/opf/openproject-docker-compose",
   "exposable": true,
   "supported_architectures": ["arm64", "amd64"],
+  "created_at": 1724134338800,
+  "updated_at": 1724134338800,
   "form_fields": [
     {
       "type": "text",
@@ -82,7 +84,5 @@
       "required": false,
       "env_variable": "IMAP_ENABLED"
     }
-  ],
-  "created_at": 1724134338800,
-  "updated_at": 1724134338800
+  ]
 }
