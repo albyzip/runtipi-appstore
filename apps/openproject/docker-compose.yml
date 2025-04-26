@@ -30,7 +30,7 @@ x-op-app: &app
     - RAILS_MAX_THREADS=${RAILS_MAX_THREADS:-16}
     - IMAP_ENABLED=${IMAP_ENABLED:-false}
   volumes:
-    - ${APP_DATA_DIR}/data/opdata:/var/openproject/assets
+    - ${ROOT_FOLDER_HOST}/app-data:/var/openproject/assets
 
 services:
   openproject:
