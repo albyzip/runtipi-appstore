@@ -43,12 +43,9 @@ services:
       - tipi_main_network
       - op-backend
     depends_on:
-      op-db:
-        condition: service_started
-      op-cache:
-        condition: service_started
-      op-seeder:
-        condition: service_started
+      - op-db
+      - op-cache
+      - op-seeder
     labels:
       # Main
       traefik.enable: true
@@ -76,12 +73,6 @@ services:
       traefik.http.routers.openproject-local.tls: true
       # Health check
       autoheal: true
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080${OPENPROJECT_RAILS__RELATIVE__URL__ROOT:-}/health_checks/default"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 30s
 
   op-db:
     image: postgres:13
@@ -119,10 +110,8 @@ services:
     networks:
       - op-backend
     depends_on:
-      op-db:
-        condition: service_started
-      op-cache:
-        condition: service_started
+      - op-db
+      - op-cache
 
   op-cron:
     <<: *app
@@ -130,10 +119,8 @@ services:
     networks:
       - op-backend
     depends_on:
-      op-db:
-        condition: service_started
-      op-cache:
-        condition: service_started
+      - op-db
+      - op-cache
 
   op-seeder:
     <<: *app
