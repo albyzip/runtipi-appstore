@@ -11,6 +11,7 @@
   "version": "v15-slim",
   "source": "https://github.com/opf/openproject-docker-compose",
   "exposable": true,
+  "dynamic_config": true,
   "supported_architectures": ["arm64", "amd64"],
   "created_at": 1724134338800,
   "updated_at": 1724134338800,
